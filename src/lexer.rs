@@ -1,5 +1,5 @@
 /// 字句解析の結果として得られるトークンの種類
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Token {
     /// 数値リテラル
     Number(f64),
@@ -117,7 +117,7 @@ impl Lexer {
                 None => break,
             }
         }
-
+        result.push(Token::Eof);
         Ok(result)
     }
 }
