@@ -13,6 +13,10 @@ pub enum Token {
     Slash,
     /// 入力の終端
     Eof,
+    /// '('
+    LParen,
+    /// ')'
+    RParen,
 }
 
 /// 文字列をトークン列に分解する字句解析器
@@ -104,6 +108,14 @@ impl Lexer {
                 }
                 Some('/') => {
                     result.push(Token::Slash);
+                    self.consume_char();
+                }
+                Some('(') => {
+                    result.push(Token::LParen);
+                    self.consume_char();
+                }
+                Some(')') => {
+                    result.push(Token::RParen);
                     self.consume_char();
                 }
                 Some(c) if c.is_ascii_digit() => {

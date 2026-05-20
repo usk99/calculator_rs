@@ -47,10 +47,20 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> Result<Expr, String> {
-        match self.consume() {
-            Some(Token::Number(n)) => Ok(Expr::Number(n)),
-            Some(t) => Err(format!("unexpected token: {:?}", t)),
-            None => Err("unexpected end of input".to_string()),
+        match self.current() {
+            Some(Token::LParen) => {
+                self.consume();
+                let expr = self.parse_expr()?;
+                match self.consume() {
+                    Some(Token::RParen) => Ok(expr),
+                    _ => Err("expected ')'".to_string()),
+                }
+            }
+            _ => match self.consume() {
+                Some(Token::Number(n)) => Ok(Expr::Number(n)),
+                Some(t) => Err(format!("unexpected token: {:?}", t)),
+                None => Err("unexpected end of input".to_string()),
+            },
         }
     }
 
