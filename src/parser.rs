@@ -56,6 +56,15 @@ impl Parser {
                     _ => Err("expected ')'".to_string()),
                 }
             }
+            Some(Token::Minus) => {
+                self.consume();
+                let ope = self.parse_primary()?;
+                Ok(Expr::BinOp {
+                    op: Op::Minus,
+                    left: Box::new(Expr::Number(0.0)),
+                    right: Box::new(ope),
+                })
+            }
             _ => match self.consume() {
                 Some(Token::Number(n)) => Ok(Expr::Number(n)),
                 Some(t) => Err(format!("unexpected token: {:?}", t)),

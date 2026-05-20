@@ -119,7 +119,7 @@ impl Lexer {
                     self.consume_char();
                 }
                 Some(c) if c.is_ascii_digit() => {
-                    let num = self.consume_while(char::is_numeric);
+                    let num = self.consume_while(|c| c.is_numeric() || c == '.');
                     let n = num.parse::<f64>().map_err(|e| e.to_string())?;
                     result.push(Token::Number(n));
                 }
