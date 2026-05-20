@@ -9,10 +9,18 @@ const LABEL_ROWS: f32 = 3.0;
 const LABEL_H: f32 = 50.0;
 const MEMORY_SLOTS: usize = 5;
 
+/// 空白付き演算子のリスト。バックスペースでまとめて削除するために使用
+const OPS: &[&str] = &[" + ", " - ", " * ", " / "];
+
+/// 電卓アプリの状態
 pub struct CalcApp {
+    /// 入力中の式
     input: String,
+    /// 直前の計算結果
     answer: f64,
+    /// エラーメッセージ（正常時は空）
     error_message: String,
+    /// メモリスロット（M1〜M5）
     memory: [f64; MEMORY_SLOTS],
 }
 
@@ -23,6 +31,40 @@ impl Default for CalcApp {
             answer: 0.0,
             error_message: String::new(),
             memory: [0.0; MEMORY_SLOTS],
+        }
+    }
+}
+
+impl CalcApp {
+    /// 末尾が空白付き演算子なら3文字まとめて削除、それ以外は1文字削除
+    fn backspace(&mut self) {
+        for op in OPS {
+            if self.input.ends_with(op) {
+                let new_len = self.input.len() - op.len();
+                self.input.truncate(new_len);
+                return;
+            }
+        }
+        self.input.pop();
+    }
+
+    /// input をパイプライン（Lexer→Parser→Evaluator）で評価して answer を更新
+    fn calculate(&mut self) {
+        self.error_message.clear();
+        let mut lex = Lexer::new(&self.input);
+        if let Ok(tokens) = lex.tokenize() {
+            let mut parser = Parser::new(tokens);
+            if let Ok(expr) = parser.parse_expr() {
+                if let Ok(ev) = eval(&expr) {
+                    self.answer = ev;
+                } else {
+                    self.error_message = "err".to_string();
+                }
+            } else {
+                self.error_message = "err".to_string();
+            }
+        } else {
+            self.error_message = "err".to_string();
         }
     }
 }
@@ -97,8 +139,8 @@ impl eframe::App for CalcApp {
                             self.answer = 0.0;
                             self.error_message.clear();
                         }
-                        if ui.add_sized(btn_size, btn("<")).clicked() && !self.input.is_empty() {
-                            self.input.pop();
+                        if ui.add_sized(btn_size, btn("<")).clicked() {
+                            self.backspace();
                         }
                     });
                     ui.horizontal(|ui| {
@@ -108,7 +150,7 @@ impl eframe::App for CalcApp {
                             }
                         }
                         if ui.add_sized(btn_size, btn("/")).clicked() {
-                            self.input.push('/');
+                            self.input.push_str(" / ");
                         }
                     });
                     ui.horizontal(|ui| {
@@ -118,7 +160,7 @@ impl eframe::App for CalcApp {
                             }
                         }
                         if ui.add_sized(btn_size, btn("*")).clicked() {
-                            self.input.push('*');
+                            self.input.push_str(" * ");
                         }
                     });
                     ui.horizontal(|ui| {
@@ -128,7 +170,7 @@ impl eframe::App for CalcApp {
                             }
                         }
                         if ui.add_sized(btn_size, btn("-")).clicked() {
-                            self.input.push('-');
+                            self.input.push_str(" - ");
                         }
                     });
                     ui.horizontal(|ui| {
@@ -139,25 +181,10 @@ impl eframe::App for CalcApp {
                             self.input.push('.');
                         }
                         if ui.add_sized(btn_size, btn("=")).clicked() {
-                            self.error_message.clear();
-                            let mut lex = Lexer::new(&self.input);
-                            if let Ok(tokens) = lex.tokenize() {
-                                let mut parser = Parser::new(tokens);
-                                if let Ok(expr) = parser.parse_expr() {
-                                    if let Ok(ev) = eval(&expr) {
-                                        self.answer = ev;
-                                    } else {
-                                        self.error_message = "err".to_string();
-                                    }
-                                } else {
-                                    self.error_message = "err".to_string();
-                                }
-                            } else {
-                                self.error_message = "err".to_string();
-                            }
+                            self.calculate();
                         }
                         if ui.add_sized(btn_size, btn("+")).clicked() {
-                            self.input.push('+');
+                            self.input.push_str(" + ");
                         }
                     });
                 });
