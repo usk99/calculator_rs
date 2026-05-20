@@ -55,12 +55,32 @@ impl Parser {
     }
 
     pub fn parse_expr(&mut self) -> Result<Expr, String> {
-        let mut left = self.parse_primary()?;
+        let mut left = self.parse_term()?;
 
         loop {
             let op = match self.current() {
                 Some(Token::Plus) => Op::Plus,
                 Some(Token::Minus) => Op::Minus,
+                _ => break,
+            };
+            self.consume();
+
+            let right = self.parse_term()?;
+            left = Expr::BinOp {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+            };
+        }
+
+        Ok(left)
+    }
+
+    pub fn parse_term(&mut self) -> Result<Expr, String> {
+        let mut left = self.parse_primary()?;
+
+        loop {
+            let op = match self.current() {
                 Some(Token::Star) => Op::Star,
                 Some(Token::Slash) => Op::Slash,
                 _ => break,
