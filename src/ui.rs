@@ -3,6 +3,11 @@ use crate::lexer::*;
 use crate::parser::*;
 use eframe::egui;
 
+const BTN_ROWS: f32 = 5.0;
+const BTN_COLS: usize = 4;
+const LABEL_ROWS: f32 = 3.0;
+const LABEL_H: f32 = 50.0;
+
 #[derive(Default)]
 pub struct CalcApp {
     input: String,
@@ -19,100 +24,90 @@ impl eframe::App for CalcApp {
         ctx.set_style(style);
 
         let btn = |label: &str| egui::Button::new(label);
-        let btn_size = [100.0, 70.0];
-        let display_size = [200.0, 50.0];
-        let btn_cols = 4;
-        let btn_width = btn_size[0] * btn_cols as f32;
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.add_sized(display_size, egui::Label::new(&self.input));
-                ui.add_sized(display_size, egui::Label::new(self.answer.to_string()));
-                ui.add_sized(display_size, egui::Label::new(&self.error_message));
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::central_panel(&ctx.style()).inner_margin(egui::Margin {
+                    left: 0,
+                    right: 16,
+                    top: 0,
+                    bottom: 25,
+                }),
+            )
+            .show(ctx, |ui| {
+                let w = ui.available_width();
+                let h = ui.available_height();
+                let label_total = LABEL_H * LABEL_ROWS;
+                let btn_h = ((h - label_total) / BTN_ROWS).max(30.0);
+                let btn_w = w / BTN_COLS as f32;
+                let btn_size = [btn_w, btn_h];
+                let display_size = [w, LABEL_H];
 
-                let margin = (ui.available_width() - btn_width) / 2.0;
+                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                    ui.add_sized(display_size, egui::Label::new(&self.input));
+                    ui.add_sized(display_size, egui::Label::new(self.answer.to_string()));
+                    ui.add_sized(display_size, egui::Label::new(&self.error_message));
 
-                ui.horizontal(|ui| {
-                    ui.add_space(margin);
-                    if ui.add_sized(btn_size, btn("(")).clicked() {
-                        self.input.push('(');
-                    }
-                    if ui.add_sized(btn_size, btn(")")).clicked() {
-                        self.input.push(')');
-                    }
-                    if ui.add_sized(btn_size, btn("C")).clicked() {
-                        self.input.clear();
-                        self.answer = 0.0;
-                        self.error_message.clear();
-                    }
-                    if ui.add_sized(btn_size, btn("<")).clicked() && !self.input.is_empty() {
-                        self.input.pop();
-                    };
-                });
-                ui.horizontal(|ui| {
-                    ui.add_space(margin);
-                    for i in 7..=9 {
-                        if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
-                            self.input.push_str(&i.to_string());
+                    ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("(")).clicked() { self.input.push('('); }
+                        if ui.add_sized(btn_size, btn(")")).clicked() { self.input.push(')'); }
+                        if ui.add_sized(btn_size, btn("C")).clicked() {
+                            self.input.clear();
+                            self.answer = 0.0;
+                            self.error_message.clear();
                         }
-                    }
-                    if ui.add_sized(btn_size, btn("/")).clicked() {
-                        self.input.push('/');
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.add_space(margin);
-                    for i in 4..=6 {
-                        if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
-                            self.input.push_str(&i.to_string());
+                        if ui.add_sized(btn_size, btn("<")).clicked() && !self.input.is_empty() {
+                            self.input.pop();
                         }
-                    }
-                    if ui.add_sized(btn_size, btn("*")).clicked() {
-                        self.input.push('*');
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.add_space(margin);
-                    for i in 1..=3 {
-                        if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
-                            self.input.push_str(&i.to_string());
+                    });
+                    ui.horizontal(|ui| {
+                        for i in 7..=9 {
+                            if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
+                                self.input.push_str(&i.to_string());
+                            }
                         }
-                    }
-                    if ui.add_sized(btn_size, btn("-")).clicked() {
-                        self.input.push('-');
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.add_space(margin);
-                    if ui.add_sized(btn_size, btn("0")).clicked() {
-                        self.input.push('0');
-                    }
-                    if ui.add_sized(btn_size, btn(".")).clicked() {
-                        self.input.push('.');
-                    }
-                    if ui.add_sized(btn_size, btn("=")).clicked() {
-                        self.error_message.clear();
-                        let mut lex = Lexer::new(&self.input);
-                        if let Ok(tokens) = lex.tokenize() {
-                            let mut parser = Parser::new(tokens);
-                            if let Ok(expr) = parser.parse_expr() {
-                                if let Ok(ev) = eval(&expr) {
-                                    self.answer = ev;
+                        if ui.add_sized(btn_size, btn("/")).clicked() { self.input.push('/'); }
+                    });
+                    ui.horizontal(|ui| {
+                        for i in 4..=6 {
+                            if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
+                                self.input.push_str(&i.to_string());
+                            }
+                        }
+                        if ui.add_sized(btn_size, btn("*")).clicked() { self.input.push('*'); }
+                    });
+                    ui.horizontal(|ui| {
+                        for i in 1..=3 {
+                            if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
+                                self.input.push_str(&i.to_string());
+                            }
+                        }
+                        if ui.add_sized(btn_size, btn("-")).clicked() { self.input.push('-'); }
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("0")).clicked() { self.input.push('0'); }
+                        if ui.add_sized(btn_size, btn(".")).clicked() { self.input.push('.'); }
+                        if ui.add_sized(btn_size, btn("=")).clicked() {
+                            self.error_message.clear();
+                            let mut lex = Lexer::new(&self.input);
+                            if let Ok(tokens) = lex.tokenize() {
+                                let mut parser = Parser::new(tokens);
+                                if let Ok(expr) = parser.parse_expr() {
+                                    if let Ok(ev) = eval(&expr) {
+                                        self.answer = ev;
+                                    } else {
+                                        self.error_message = "err".to_string();
+                                    }
                                 } else {
                                     self.error_message = "err".to_string();
                                 }
                             } else {
                                 self.error_message = "err".to_string();
                             }
-                        } else {
-                            self.error_message = "err".to_string();
                         }
-                    }
-                    if ui.add_sized(btn_size, btn("+")).clicked() {
-                        self.input.push('+');
-                    }
+                        if ui.add_sized(btn_size, btn("+")).clicked() { self.input.push('+'); }
+                    });
                 });
             });
-        });
     }
 }
