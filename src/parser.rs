@@ -1,5 +1,6 @@
 use crate::lexer::*;
 
+/// 二項演算子の種類
 #[derive(Debug, Clone, Copy)]
 pub enum Op {
     Plus,
@@ -8,16 +9,22 @@ pub enum Op {
     Slash,
 }
 
+/// 抽象構文木（AST）のノード
 #[derive(Debug, Clone)]
 pub enum Expr {
+    /// 数値リテラル
     Number(f64),
+    /// 二項演算（left op right）
     BinOp {
         op: Op,
         left: Box<Expr>,
         right: Box<Expr>,
     },
+    /// 関数呼び出し（name(args...)）
+    Call { name: String, args: Vec<Expr> },
 }
 
+/// トークン列を AST に変換する構文解析器
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
@@ -28,24 +35,28 @@ impl Parser {
         Self { tokens, pos: 0 }
     }
 
+    /// 現在位置のトークンを返す（消費しない）
     fn current(&self) -> Option<&Token> {
         if self.eof() {
             return None;
         }
         Some(&self.tokens[self.pos])
     }
+    /// 現在位置のトークンを返して pos を進める
     fn consume(&mut self) -> Option<Token> {
         if self.eof() {
             return None;
         }
-        let token = Some(self.tokens[self.pos]);
+        let token = Some(self.tokens[self.pos].clone());
         self.pos += 1;
         token
     }
+    /// トークン列の終端かどうか
     fn eof(&self) -> bool {
         self.pos == self.tokens.len()
     }
 
+    /// 数値・カッコ・単項マイナス・関数呼び出しを解析する
     fn parse_primary(&mut self) -> Result<Expr, String> {
         match self.current() {
             Some(Token::LParen) => {
@@ -65,6 +76,27 @@ impl Parser {
                     right: Box::new(ope),
                 })
             }
+            Some(Token::Func(name)) => {
+                let name = name.clone();
+                self.consume(); // Func トークンを消費
+                self.consume(); // `(` を消費
+                let mut args = Vec::new();
+                loop {
+                    args.push(self.parse_expr()?);
+                    match self.current() {
+                        Some(Token::RParen) => {
+                            self.consume();
+                            break;
+                        }
+                        Some(Token::Comma) => {
+                            self.consume();
+                        }
+                        _ => return Err("expected ',' or ')'".to_string()),
+                    }
+                }
+                Ok(Expr::Call { name, args })
+            }
+
             _ => match self.consume() {
                 Some(Token::Number(n)) => Ok(Expr::Number(n)),
                 Some(t) => Err(format!("unexpected token: {:?}", t)),
@@ -73,6 +105,7 @@ impl Parser {
         }
     }
 
+    /// 加算・減算を解析する（最低優先順位）
     pub fn parse_expr(&mut self) -> Result<Expr, String> {
         let mut left = self.parse_term()?;
 
@@ -95,6 +128,7 @@ impl Parser {
         Ok(left)
     }
 
+    /// 乗算・除算を解析する（加減算より高優先順位）
     pub fn parse_term(&mut self) -> Result<Expr, String> {
         let mut left = self.parse_primary()?;
 

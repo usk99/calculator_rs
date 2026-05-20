@@ -1,5 +1,5 @@
 /// 字句解析の結果として得られるトークンの種類
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// 数値リテラル
     Number(f64),
@@ -17,6 +17,10 @@ pub enum Token {
     LParen,
     /// ')'
     RParen,
+    /// 関数
+    Func(String),
+    /// ','
+    Comma,
 }
 
 /// 文字列をトークン列に分解する字句解析器
@@ -118,10 +122,18 @@ impl Lexer {
                     result.push(Token::RParen);
                     self.consume_char();
                 }
+                Some(',') => {
+                    result.push(Token::Comma);
+                    self.consume_char();
+                }
                 Some(c) if c.is_ascii_digit() => {
                     let num = self.consume_while(|c| c.is_numeric() || c == '.');
                     let n = num.parse::<f64>().map_err(|e| e.to_string())?;
                     result.push(Token::Number(n));
+                }
+                Some(c) if c.is_alphabetic() => {
+                    let name = self.consume_while(|c| c.is_alphanumeric());
+                    result.push(Token::Func(name));
                 }
                 Some(c) => {
                     return Err(c.to_string());

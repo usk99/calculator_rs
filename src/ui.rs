@@ -4,7 +4,7 @@ use crate::parser::*;
 use eframe::egui;
 
 const BTN_ROWS: f32 = 5.0;
-const BTN_COLS: usize = 4;
+const BTN_COLS: usize = 5;
 const LABEL_ROWS: f32 = 3.0;
 const LABEL_H: f32 = 50.0;
 const MEMORY_SLOTS: usize = 5;
@@ -51,6 +51,12 @@ impl CalcApp {
     /// input をパイプライン（Lexer→Parser→Evaluator）で評価して answer を更新
     fn calculate(&mut self) {
         self.error_message.clear();
+        // 未閉じ括弧を自動補完
+        let open = self.input.chars().filter(|&c| c == '(').count();
+        let close = self.input.chars().filter(|&c| c == ')').count();
+        for _ in 0..(open.saturating_sub(close)) {
+            self.input.push(')');
+        }
         let mut lex = Lexer::new(&self.input);
         if let Ok(tokens) = lex.tokenize() {
             let mut parser = Parser::new(tokens);
@@ -128,6 +134,8 @@ impl eframe::App for CalcApp {
                     ui.add_sized(display_size, egui::Label::new(&self.error_message));
 
                     ui.horizontal(|ui| {
+                        // 左列: 空白
+                        ui.add_sized(btn_size, egui::Label::new(""));
                         if ui.add_sized(btn_size, btn("(")).clicked() {
                             self.input.push('(');
                         }
@@ -144,6 +152,10 @@ impl eframe::App for CalcApp {
                         }
                     });
                     ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("y\u{221a}x")).clicked() {
+                            let x = self.input.clone();
+                            self.input = format!("sqrt({},", x);
+                        }
                         for i in 7..=9 {
                             if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
                                 self.input.push_str(&i.to_string());
@@ -154,6 +166,10 @@ impl eframe::App for CalcApp {
                         }
                     });
                     ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("x^y")).clicked() {
+                            let x = self.input.clone();
+                            self.input = format!("pow({},", x);
+                        }
                         for i in 4..=6 {
                             if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
                                 self.input.push_str(&i.to_string());
@@ -164,6 +180,10 @@ impl eframe::App for CalcApp {
                         }
                     });
                     ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("log")).clicked() {
+                            let x = self.input.clone();
+                            self.input = format!("log({},", x);
+                        }
                         for i in 1..=3 {
                             if ui.add_sized(btn_size, btn(&i.to_string())).clicked() {
                                 self.input.push_str(&i.to_string());
@@ -174,6 +194,7 @@ impl eframe::App for CalcApp {
                         }
                     });
                     ui.horizontal(|ui| {
+                        if ui.add_sized(btn_size, btn("+/-")).clicked() { /* TODO */ }
                         if ui.add_sized(btn_size, btn("0")).clicked() {
                             self.input.push('0');
                         }
