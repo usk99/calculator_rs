@@ -7,12 +7,24 @@ const BTN_ROWS: f32 = 5.0;
 const BTN_COLS: usize = 4;
 const LABEL_ROWS: f32 = 3.0;
 const LABEL_H: f32 = 50.0;
+const MEMORY_SLOTS: usize = 5;
 
-#[derive(Default)]
 pub struct CalcApp {
     input: String,
     answer: f64,
     error_message: String,
+    memory: [f64; MEMORY_SLOTS],
+}
+
+impl Default for CalcApp {
+    fn default() -> Self {
+        Self {
+            input: String::new(),
+            answer: 0.0,
+            error_message: String::new(),
+            memory: [0.0; MEMORY_SLOTS],
+        }
+    }
 }
 
 impl eframe::App for CalcApp {
@@ -24,6 +36,31 @@ impl eframe::App for CalcApp {
         ctx.set_style(style);
 
         let btn = |label: &str| egui::Button::new(label);
+
+        egui::SidePanel::right("memory_panel")
+            .resizable(false)
+            .exact_width(140.0)
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.add_space(8.0);
+                    ui.label("Memory");
+                    ui.separator();
+                    for i in 0..MEMORY_SLOTS {
+                        ui.horizontal(|ui| {
+                            ui.label(format!("M{}: {}", i + 1, self.memory[i]));
+                        });
+                        ui.horizontal(|ui| {
+                            if ui.button("S").clicked() {
+                                self.memory[i] = self.answer;
+                            }
+                            if ui.button("R").clicked() {
+                                self.input.push_str(&self.memory[i].to_string());
+                            }
+                        });
+                        ui.separator();
+                    }
+                });
+            });
 
         egui::CentralPanel::default()
             .frame(
@@ -49,8 +86,12 @@ impl eframe::App for CalcApp {
                     ui.add_sized(display_size, egui::Label::new(&self.error_message));
 
                     ui.horizontal(|ui| {
-                        if ui.add_sized(btn_size, btn("(")).clicked() { self.input.push('('); }
-                        if ui.add_sized(btn_size, btn(")")).clicked() { self.input.push(')'); }
+                        if ui.add_sized(btn_size, btn("(")).clicked() {
+                            self.input.push('(');
+                        }
+                        if ui.add_sized(btn_size, btn(")")).clicked() {
+                            self.input.push(')');
+                        }
                         if ui.add_sized(btn_size, btn("C")).clicked() {
                             self.input.clear();
                             self.answer = 0.0;
@@ -66,7 +107,9 @@ impl eframe::App for CalcApp {
                                 self.input.push_str(&i.to_string());
                             }
                         }
-                        if ui.add_sized(btn_size, btn("/")).clicked() { self.input.push('/'); }
+                        if ui.add_sized(btn_size, btn("/")).clicked() {
+                            self.input.push('/');
+                        }
                     });
                     ui.horizontal(|ui| {
                         for i in 4..=6 {
@@ -74,7 +117,9 @@ impl eframe::App for CalcApp {
                                 self.input.push_str(&i.to_string());
                             }
                         }
-                        if ui.add_sized(btn_size, btn("*")).clicked() { self.input.push('*'); }
+                        if ui.add_sized(btn_size, btn("*")).clicked() {
+                            self.input.push('*');
+                        }
                     });
                     ui.horizontal(|ui| {
                         for i in 1..=3 {
@@ -82,11 +127,17 @@ impl eframe::App for CalcApp {
                                 self.input.push_str(&i.to_string());
                             }
                         }
-                        if ui.add_sized(btn_size, btn("-")).clicked() { self.input.push('-'); }
+                        if ui.add_sized(btn_size, btn("-")).clicked() {
+                            self.input.push('-');
+                        }
                     });
                     ui.horizontal(|ui| {
-                        if ui.add_sized(btn_size, btn("0")).clicked() { self.input.push('0'); }
-                        if ui.add_sized(btn_size, btn(".")).clicked() { self.input.push('.'); }
+                        if ui.add_sized(btn_size, btn("0")).clicked() {
+                            self.input.push('0');
+                        }
+                        if ui.add_sized(btn_size, btn(".")).clicked() {
+                            self.input.push('.');
+                        }
                         if ui.add_sized(btn_size, btn("=")).clicked() {
                             self.error_message.clear();
                             let mut lex = Lexer::new(&self.input);
@@ -105,7 +156,9 @@ impl eframe::App for CalcApp {
                                 self.error_message = "err".to_string();
                             }
                         }
-                        if ui.add_sized(btn_size, btn("+")).clicked() { self.input.push('+'); }
+                        if ui.add_sized(btn_size, btn("+")).clicked() {
+                            self.input.push('+');
+                        }
                     });
                 });
             });

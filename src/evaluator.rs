@@ -1,4 +1,17 @@
 use crate::parser::*;
+use std::collections::HashMap;
+
+pub struct Evaluator {
+    vars: HashMap<String, f64>,
+}
+
+impl Evaluator {
+    fn new() -> Self {
+        Self {
+            vars: HashMap::new(),
+        }
+    }
+}
 
 pub fn eval(expr: &Expr) -> Result<f64, String> {
     match expr {
